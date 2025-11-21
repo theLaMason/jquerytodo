@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>jQuery Todo App</title>
+
+  <!-- Fixed font loading -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --subtle: #6b7280;
+      --item-bg: #f9fafb;
+      --item-bg-done: #e5e7eb;
+      --accent: #2563eb;
+      --delete: #ef4444;
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+    body.dark {
+      --bg: #1b1e23;
+      --card-bg: #262a31;
+      --text: #f3f4f6;
+      --subtle: #a1a1aa;
+      --item-bg: #2e333b;
+      --item-bg-done: #3a404a;
+      --accent: #3b82f6;
+      --delete: #f87171;
+      --shadow: rgba(0,0,0,0.4);
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      transition: background .3s;
+      margin: 0;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow);
+      width: 420px;
+      transition: background .3s;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .toggle-btn {
+      cursor: pointer;
+      background: var(--item-bg);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      border: 1px solid var(--subtle);
+      color: var(--text);
+      transition: .2s;
+    }
+
+    .toggle-btn:hover {
+      opacity: .8;
+    }
+
+    form {
+      display: flex;
+      margin: 20px 0;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--subtle);
+      font-size: 16px;
+      background: var(--item-bg);
+      color: var(--text);
+    }
+
+    input[type="submit"] {
+      padding: 12px 20px;
+      margin-left: 10px;
+      background: var(--accent);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    input[type="submit"]:hover {
+      opacity: .9;
+    }
+
+    ul {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    li {
+      background: var(--item-bg);
+      margin-bottom: 10px;
+      padding: 12px 15px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background .2s;
+      color: var(--text);
+    }
+
+    li.completed {
+      text-decoration: line-through;
+      background: var(--item-bg-done);
+      color: var(--subtle);
+    }
+
+    .delete-btn {
+      background: var(--delete);
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .delete-btn:hover {
+      opacity: .9;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>My To-Do List</h1>
+      <button class="toggle-btn" id="themeToggle">🌙 Dark Mode</button>
+    </div>
+
+    <form id="todo_form">
+      <input type="text" id="todo_entry" placeholder="Add a new task...">
+      <input type="submit" value="Add">
+    </form>
+
+    <ul id="todo_results"></ul>
+  </div>
+
+  <script>
+    // THEME HANDLING
+    function loadTheme() {
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") {
+        $("body").addClass("dark");
+        $("#themeToggle").text("☀️ Light Mode");
+      }
+    }
+    $("#themeToggle").click(function () {
+      $("body").toggleClass("dark");
+      const isDark = $("body").hasClass("dark");
+      $(this).text(isDark ? "☀️ Light Mode" : "🌙 Dark Mode");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    });
+    loadTheme();
+
+    // TODOS
+    function loadTodos() {
+      const todos = JSON.parse(localStorage.getItem("todos")) || [];
+      todos.forEach(t => addTodoToDOM(t.text, t.completed));
+    }
+
+    function saveTodos() {
+      let todos = [];
+      $("#todo_results li").each(function () {
+        todos.push({
+          text: $(this).find(".todo-text").text(),
+          completed: $(this).hasClass("completed")
+        });
+      });
+      localStorage.setItem("todos", JSON.stringify(todos));
+    }
+
+    function addTodoToDOM(text, completed = false) {
+      const item = $(`
+        <li class="${completed ? 'completed' : ''}">
+          <span class="todo-text">${text}</span>
+          <button class="delete-btn">Delete</button>
+        </li>
+      `);
+      $("#todo_results").append(item);
+    }
+
+    $("#todo_form").submit(function (e) {
+      e.preventDefault();
+      const entry = $("#todo_entry").val().trim();
+      if (entry === "") return;
+      addTodoToDOM(entry);
+      saveTodos();
+      $("#todo_entry").val("");
+    });
+
+    $("#todo_results").on("click", ".todo-text", function () {
+      $(this).parent().toggleClass("completed");
+      saveTodos();
+    });
+
+    $("#todo_results").on("click", ".delete-btn", function () {
+      $(this).parent().fadeOut(150, function () {
+        $(this).remove();
+        saveTodos();
+      });
+    });
+
+    loadTodos();
+  </script>
+</body>
+</html>
